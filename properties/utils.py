@@ -8,7 +8,7 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-def get_all_properties(force_refresh=False):
+def get_all_properties():
     """
     Get all properties with Redis caching
     
