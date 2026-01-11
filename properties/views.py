@@ -25,16 +25,13 @@ def property_list(request):
     properties = Property.objects.all().order_by('-created_at')
     serializer = PropertySerializer(properties, many=True)
     
-    # Add cache info to response
-    response_data = {
+    return JsonResponse({
         'count': properties.count(),
         'properties': serializer.data,
         'cached': True,
         'cache_timeout': 15 * 60,  # 15 minutes in seconds
         'cache_timestamp': cache.get('property_list_timestamp')
-    }
-    
-    return JsonResponse(response_data)
+    })
 
 # Class-based view with caching
 @method_decorator(cache_page(60 * 15), name='dispatch')
