@@ -11,13 +11,14 @@ import logging
 from .models import Property
 from .serializers import PropertySerializer
 from .utils import get_all_properties, get_redis_cache_metrics
+from django.http import JsonResponse
 
 logger = logging.getLogger(__name__)
 
 # View-based caching
 @cache_page(60 * 15)  # Cache for 15 minutes
 @api_view(['GET'])
-def property_list_view(request):
+def property_list(request):
     """
     View-based caching for property list (15 minutes cache)
     """
@@ -33,7 +34,7 @@ def property_list_view(request):
         'cache_timestamp': cache.get('property_list_timestamp')
     }
     
-    return Response(response_data)
+    return JsonResponse(response_data)
 
 # Class-based view with caching
 @method_decorator(cache_page(60 * 15), name='dispatch')
@@ -120,4 +121,4 @@ class CacheStatsView(APIView):
     def get(self, request):
         """Get Redis cache statistics"""
         metrics = get_redis_cache_metrics()
-        return Response(metrics)
+        return JsonResponse(metrics)
