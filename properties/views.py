@@ -12,25 +12,39 @@ from .models import Property
 from .serializers import PropertySerializer
 from .utils import get_all_properties, get_redis_cache_metrics
 from django.http import JsonResponse
+from .utils import get_all_properties, get_property_by_id
 
 logger = logging.getLogger(__name__)
 
-# View-based caching
-@cache_page(60 * 15)  # Cache for 15 minutes
+@cache_page(60 * 15)
 @api_view(['GET'])
 def property_list(request):
     """
-    View-based caching for property list (15 minutes cache)
+    View-based caching for property list using utility function
     """
-    properties = Property.objects.all().order_by('-created_at')
+    # Use utility function for low-level caching
+    properties = get_all_properties()
+    
+    # Check if we should force refresh
+    force_refresh = request.GET.get('refresh') == 'true'
+    if force_refresh:
+        properties = get_all_properties(force_refresh=True)
+    
     serializer = PropertySerializer(properties, many=True)
     
-    return JsonResponse({
+    # Get cache info
+    cache_timestamp = cache.get('all_properties_timestamp')
+    
+    return Response({
         'count': properties.count(),
         'properties': serializer.data,
-        'cached': True,
-        'cache_timeout': 15 * 60,  # 15 minutes in seconds
-        'cache_timestamp': cache.get('property_list_timestamp')
+        'cache_info': {
+            'is_cached': cache_timestamp is not None and not force_refresh,
+            'cached_at': cache_timestamp,
+            'cache_strategy': 'low_level + view_level',
+            'view_cache_timeout': 15 * 60,
+            'queryset_cache_timeout': 60 * 60,
+        }
     })
 
 # Class-based view with caching
